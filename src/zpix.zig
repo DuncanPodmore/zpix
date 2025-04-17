@@ -170,7 +170,7 @@ const impl = struct {
             );
         };
 
-        if (windows.LoadLibraryA(dll_path.ptr)) |m| {
+        if (windows.LoadLibraryW(dll_path.ptr)) |m| {
             return .{ .module = m };
         } else {
             // unable to reuse same allocator for dll_path due to https://github.com/ziglang/zig/issues/15850
