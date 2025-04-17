@@ -173,18 +173,17 @@ const impl = struct {
         const gpa_allocator = gpa.allocator();
         defer _ = gpa.deinit();
 
-        const dll_path_w = try std.unicode.utf8ToUtf16LeWithNull(gpa_allocator, dll_path);
+        const dll_path_w = try std.unicode.utf8ToUtf16LeAllocZ(gpa_allocator, dll_path);
         defer gpa_allocator.free(dll_path_w);
 
-        if (windows.LoadLibraryW(dll_path_w.ptr)) |m| {
-            return .{ .module = m };
-        } else {
-            // unable to reuse same allocator for dll_path due to https://github.com/ziglang/zig/issues/15850
+        const m = windows.LoadLibraryW(dll_path_w) catch {
             var buffer: [2048]u8 = undefined;
             var fba = std.heap.FixedBufferAllocator.init(buffer[0..]);
             const allocator = fba.allocator();
             @panic(try std.fmt.allocPrint(allocator, "failed to load library: {s}\n", .{dll_path}));
-        }
+        };
+        
+        return .{ .module = m };
     }
 
     fn beginCapture(flags: CAPTURE_FLAGS, params: ?*const CaptureParameters) HRESULT {
