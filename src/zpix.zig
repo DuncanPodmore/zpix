@@ -169,8 +169,14 @@ const impl = struct {
                 &.{ options.path, "WinPixGpuCapturer.dll" },
             );
         };
+        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        const gpa_allocator = gpa.allocator();
+        defer _ = gpa.deinit();
 
-        if (windows.LoadLibraryW(dll_path.ptr)) |m| {
+        const dll_path_w = try std.unicode.utf8ToUtf16LeWithNull(gpa_allocator, dll_path);
+        defer gpa_allocator.free(dll_path_w);
+
+        if (windows.LoadLibraryW(dll_path_w.ptr)) |m| {
             return .{ .module = m };
         } else {
             // unable to reuse same allocator for dll_path due to https://github.com/ziglang/zig/issues/15850
